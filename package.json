@@ -1,9 +1,11 @@
 {
   "name": "pak-cuisine-pro",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
+  "description": "Premium Pakistani Restaurant Management System",
+  "author": "Pak Cuisine Pro Team",
   "type": "module",
-  "main": "electron/main.js",
+  "main": "electron/main.cjs",
   "build": {
     "appId": "com.pakcuisine.pro",
     "productName": "Pak Cuisine Pro",

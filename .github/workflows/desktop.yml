@@ -26,10 +26,11 @@ jobs:
       - name: Build Web App
         run: npm run build
 
-      - name: Build and Package Electron
-        run: npm run electron:build
+      - name: Packaging Electron App
+        run: npx electron-builder --windows
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: false
+          NODE_ENV: production
 
       - name: Upload Windows Setup
         uses: actions/upload-artifact@v4
