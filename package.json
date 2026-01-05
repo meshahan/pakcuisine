@@ -14,14 +14,20 @@
     },
     "win": {
       "target": "nsis",
-      "icon": "public/favicon.ico",
+      "icon": "assets/icon.png",
       "verifyUpdateCodeSignature": false,
-      "sign": null,
-      "publish": null
+      "sign": null
     },
+    "publish": [
+      {
+        "provider": "generic",
+        "url": "https://example.com"
+      }
+    ],
     "files": [
       "dist/**/*",
       "electron/**/*",
+      "assets/**/*",
       "package.json"
     ]
   },

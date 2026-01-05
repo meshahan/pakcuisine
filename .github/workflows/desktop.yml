@@ -17,7 +17,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '20'
           cache: 'npm'
 
       - name: Install Dependencies
@@ -27,9 +27,11 @@ jobs:
         run: npm run build
 
       - name: Packaging Electron App
-        run: npx electron-builder --windows
+        run: npx electron-builder --windows -c.publish=never
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: false
+          CSC_SKIP_SIGNING: true
+          WIN_CSC_LINK: ""
           NODE_ENV: production
 
       - name: Upload Windows Setup
