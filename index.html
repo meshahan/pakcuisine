@@ -19,10 +19,37 @@
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:site" content="@PakCuisine" />
   <meta name="twitter:image" content="/images/logo.jpg" />
+  <script>
+    window.onerror = function (message, source, lineno, colno, error) {
+      document.body.innerHTML += '<div style="color:red; padding:20px; font-size: 20px;">' +
+        '<h3>CRITICAL ERROR:</h3>' +
+        '<p>' + message + '</p>' +
+        '<p>Source: ' + source + ':' + lineno + '</p>' +
+        '</div>';
+    };
+  </script>
 </head>
 
 <body>
-  <div id="root"></div>
+  <div id="root"
+    style="display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; background-color: #1a1a1a; color: white; font-family: sans-serif;">
+    <div style="font-size: 24px; margin-bottom: 20px;">Pak Cuisine Pro</div>
+    <div
+      style="border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite;">
+    </div>
+    <style>
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+    </style>
+    <p style="margin-top: 20px; color: #888;">Initializing Application...</p>
+  </div>
   <script type="module" src="/src/main.tsx"></script>
 </body>
 
