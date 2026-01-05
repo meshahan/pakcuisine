@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Star, Flame, Leaf, ArrowRight } from "lucide-react";
+import { motion } from "framer-motion";
 
 const featuredDishes = [
   {
@@ -50,90 +51,145 @@ const featuredDishes = [
   },
 ];
 
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1
+    }
+  }
+};
+
+const itemVariants = {
+  hidden: { y: 20, opacity: 0 },
+  visible: {
+    y: 0,
+    opacity: 1
+  }
+};
+
 export function FeaturedDishes() {
   return (
-    <section className="py-24 bg-background">
-      <div className="container mx-auto px-4">
+    <section className="py-24 bg-background relative overflow-hidden">
+      {/* Background Decorative Elements */}
+      <div className="absolute top-0 left-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
+      <div className="absolute bottom-0 right-0 w-96 h-96 bg-secondary/5 rounded-full blur-3xl translate-x-1/3 translate-y-1/3" />
+
+      <div className="container mx-auto px-4 relative z-10">
         {/* Header */}
-        <div className="text-center max-w-2xl mx-auto mb-16">
-          <span className="text-primary font-medium uppercase tracking-wider">Our Specialties</span>
-          <h2 className="font-display text-4xl md:text-5xl font-bold text-foreground mt-2 mb-4">
+        <motion.div
+          className="text-center max-w-2xl mx-auto mb-16"
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5 }}
+        >
+          <span className="text-primary font-semibold uppercase tracking-widest text-sm">Our Specialties</span>
+          <h2 className="font-display text-4xl md:text-5xl font-bold text-foreground mt-2 mb-4 leading-tight">
             Chef's <span className="text-primary">Recommended</span> Dishes
           </h2>
+          <div className="h-1 w-20 bg-primary mx-auto mb-6 rounded-full" />
           <p className="text-muted-foreground text-lg">
             Discover our most beloved dishes, crafted with authentic recipes and premium ingredients.
           </p>
-        </div>
+        </motion.div>
 
         {/* Dishes Grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-          {featuredDishes.map((dish, index) => (
-            <div
+        <motion.div
+          className="grid md:grid-cols-2 lg:grid-cols-4 gap-8"
+          variants={containerVariants}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true }}
+        >
+          {featuredDishes.map((dish) => (
+            <motion.div
               key={dish.id}
-              className="group bg-card rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 animate-fade-up"
-              style={{ animationDelay: `${index * 0.1}s` }}
+              variants={itemVariants}
+              whileHover={{ y: -10 }}
+              className="group bg-card rounded-2xl overflow-hidden border border-border/50 shadow-sm hover:shadow-2xl hover:shadow-primary/5 transition-all duration-500"
             >
               {/* Image */}
-              <div className="relative h-48 overflow-hidden">
+              <div className="relative h-56 overflow-hidden">
                 <img
                   src={dish.image}
                   alt={dish.name}
-                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                 />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+
                 {dish.badge && (
-                  <Badge className="absolute top-3 left-3 bg-primary text-primary-foreground">
+                  <Badge className="absolute top-4 left-4 bg-primary/90 backdrop-blur-md text-primary-foreground border-none px-3 py-1 shadow-lg">
                     {dish.badge}
                   </Badge>
                 )}
+
                 {/* Rating */}
-                <div className="absolute top-3 right-3 bg-background/90 backdrop-blur-sm rounded-full px-2 py-1 flex items-center gap-1">
-                  <Star className="w-3 h-3 text-primary fill-primary" />
-                  <span className="text-xs font-medium">{dish.rating}</span>
+                <div className="absolute top-4 right-4 bg-black/40 backdrop-blur-md border border-white/20 rounded-full px-2.5 py-1 flex items-center gap-1.5 text-white shadow-xl">
+                  <Star className="w-3.5 h-3.5 text-yellow-400 fill-yellow-400" />
+                  <span className="text-xs font-bold">{dish.rating}</span>
                 </div>
               </div>
 
               {/* Content */}
-              <div className="p-5">
-                <div className="flex items-start justify-between gap-2 mb-2">
-                  <h3 className="font-display text-xl font-semibold text-foreground group-hover:text-primary transition-colors">
+              <div className="p-6">
+                <div className="flex items-start justify-between gap-2 mb-3">
+                  <h3 className="font-display text-xl font-bold text-foreground group-hover:text-primary transition-colors duration-300">
                     {dish.name}
                   </h3>
-                  <span className="text-primary font-bold whitespace-nowrap">
+                  <div className="text-primary font-black text-lg">
                     ${dish.price}
-                  </span>
+                  </div>
                 </div>
-                <p className="text-muted-foreground text-sm mb-4 line-clamp-2">
+                <p className="text-muted-foreground text-sm mb-5 line-clamp-2 leading-relaxed">
                   {dish.description}
                 </p>
-                {/* Tags */}
-                <div className="flex items-center gap-2">
-                  {dish.isSpicy && (
-                    <span className="inline-flex items-center gap-1 text-xs text-accent bg-accent/10 px-2 py-1 rounded-full">
-                      <Flame className="w-3 h-3" />
-                      Spicy
-                    </span>
-                  )}
-                  {dish.isVegetarian && (
-                    <span className="inline-flex items-center gap-1 text-xs text-secondary bg-secondary/10 px-2 py-1 rounded-full">
-                      <Leaf className="w-3 h-3" />
-                      Vegetarian
-                    </span>
-                  )}
+
+                {/* Footer info & tags */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    {dish.isSpicy && (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-orange-600 bg-orange-500/10 px-2.5 py-1 rounded-md">
+                        <Flame className="w-3 h-3" />
+                        Spicy
+                      </span>
+                    )}
+                    {dish.isVegetarian && (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-green-600 bg-green-500/10 px-2.5 py-1 rounded-md">
+                        <Leaf className="w-3 h-3" />
+                        Veg
+                      </span>
+                    )}
+                  </div>
+
+                  <Link
+                    to="/menu"
+                    className="text-primary text-xs font-bold flex items-center gap-1 opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all duration-300"
+                  >
+                    View Details <ArrowRight className="w-3 h-3" />
+                  </Link>
                 </div>
               </div>
-            </div>
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
 
         {/* CTA */}
-        <div className="text-center mt-12">
-          <Button asChild size="lg" variant="outline" className="border-primary text-primary hover:bg-primary hover:text-primary-foreground">
+        <motion.div
+          className="text-center mt-16"
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true }}
+          transition={{ delay: 0.5 }}
+        >
+          <Button asChild size="lg" className="h-14 px-10 rounded-xl bg-primary hover:bg-primary/90 text-white shadow-glow group">
             <Link to="/menu">
-              View Full Menu
-              <ArrowRight className="ml-2 w-4 h-4" />
+              Explore Everything
+              <ArrowRight className="ml-3 w-5 h-5 transition-transform group-hover:translate-x-1" />
             </Link>
           </Button>
-        </div>
+        </motion.div>
       </div>
     </section>
   );
