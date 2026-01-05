@@ -14,8 +14,10 @@
     },
     "win": {
       "target": "nsis",
+      "icon": "public/favicon.ico",
       "verifyUpdateCodeSignature": false,
-      "sign": null
+      "sign": null,
+      "publish": null
     },
     "files": [
       "dist/**/*",
