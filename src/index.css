@@ -26,7 +26,7 @@
 
     /* Muted tones */
     --muted: 45 20% 92%;
-    --muted-foreground: 150 20% 40%;
+    --muted-foreground: 150 20% 40%; /* Slightly darker for better readability */
 
     /* Accent - Warm Red */
     --accent: 10 70% 50%;
@@ -70,7 +70,7 @@
     --secondary: 150 50% 35%;
     --secondary-foreground: 0 0% 100%;
     --muted: 220 15% 15%;
-    --muted-foreground: 45 10% 65%;
+    --muted-foreground: 45 10% 75%; /* Lighter for dark mode visibility */
     --accent: 10 65% 55%;
     --accent-foreground: 0 0% 100%;
     --destructive: 0 62.8% 50.6%;

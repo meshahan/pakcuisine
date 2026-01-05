@@ -145,8 +145,15 @@ export default function Deals() {
                                                 alt={deal.title}
                                                 className="w-full h-full object-cover transition-transform duration-700 hover:scale-110"
                                             />
-                                            <div className="absolute top-4 right-4 bg-red-500 text-white font-bold px-3 py-1 rounded-full shadow-lg text-sm flex items-center gap-1">
-                                                <Tag className="w-3 h-3" /> SPECIAL
+                                            <div className="absolute top-4 right-4 flex flex-col gap-2 items-end">
+                                                <div className="bg-red-500 text-white font-bold px-3 py-1 rounded-full shadow-lg text-sm flex items-center gap-1 animate-pulse">
+                                                    <Tag className="w-3 h-3" /> SPECIAL
+                                                </div>
+                                                {deal.original_price && deal.price / deal.original_price < 0.7 && (
+                                                    <div className="bg-orange-500 text-white font-bold px-3 py-1 rounded-full shadow-lg text-[10px] uppercase tracking-tighter">
+                                                        Best Deal!
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
                                         <div className="p-6 flex-1 flex flex-col">

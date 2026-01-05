@@ -134,9 +134,9 @@ export function Navbar() {
               onClick={() => setIsOpen(!isOpen)}
               className={cn(
                 "p-2 rounded-lg transition-colors",
-                isScrolled
+                isScrolled || !isHomePage
                   ? "text-foreground hover:bg-muted"
-                  : "text-primary-foreground hover:bg-primary-foreground/10"
+                  : "text-white hover:bg-white/10"
               )}
               aria-label="Toggle menu"
             >
@@ -152,8 +152,26 @@ export function Navbar() {
             isOpen ? "max-h-screen opacity-100 mt-4" : "max-h-0 opacity-0"
           )}
         >
-          <div className="bg-card rounded-xl p-4 shadow-lg space-y-2">
-            <div className="md:hidden pt-4 pb-2 space-y-2">
+          <div className="bg-card rounded-xl p-4 shadow-lg space-y-4">
+            <div className="flex items-center justify-between px-4 pb-2 border-b border-border">
+              <span className="text-sm font-medium text-muted-foreground">Appearance</span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                className="rounded-full gap-2"
+              >
+                {theme === "dark" ? (
+                  <Sun className="h-4 w-4" />
+                ) : (
+                  <Moon className="h-4 w-4" />
+                )}
+                <span className="text-xs uppercase font-bold tracking-wider">
+                  {theme === "dark" ? "Light" : "Dark"}
+                </span>
+              </Button>
+            </div>
+            <div className="md:hidden pt-2 pb-2 space-y-2">
               {navItems.map((link) => (
                 <Link
                   key={link.path}

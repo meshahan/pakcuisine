@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { Save, Palette, Globe, Clock, Phone, Mail, MapPin } from 'lucide-react';
+import { Save, Palette, Globe, Clock, Phone, Mail, MapPin, Server, ShieldCheck, Eye, EyeOff } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface SiteSettings {
@@ -29,12 +29,21 @@ interface SiteSettings {
     instagram?: string;
     twitter?: string;
   };
+  email?: {
+    smtpHost?: string;
+    smtpPort?: string;
+    smtpUser?: string;
+    smtpPass?: string;
+    senderName?: string;
+  };
 }
 
 export function AdminSettings() {
   const [settings, setSettings] = useState<SiteSettings>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [testing, setTesting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -54,7 +63,6 @@ export function AdminSettings() {
         variant: 'destructive',
       });
     } else {
-      // Convert array of key-value pairs to nested object
       const settingsObj: SiteSettings = {};
       data?.forEach((item) => {
         settingsObj[item.key as keyof SiteSettings] = item.value;
@@ -69,25 +77,16 @@ export function AdminSettings() {
       .from('site_settings')
       .upsert({ key, value }, { onConflict: 'key' });
 
-    if (error) {
-      throw error;
-    }
+    if (error) throw error;
   };
 
   const handleSaveTheme = async () => {
     setSaving(true);
     try {
       await updateSetting('theme', settings.theme || {});
-      toast({
-        title: 'Success',
-        description: 'Theme settings saved successfully',
-      });
+      toast({ title: 'Success', description: 'Theme settings saved successfully' });
     } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to save theme settings',
-        variant: 'destructive',
-      });
+      toast({ title: 'Error', description: 'Failed to save theme settings', variant: 'destructive' });
     }
     setSaving(false);
   };
@@ -96,16 +95,9 @@ export function AdminSettings() {
     setSaving(true);
     try {
       await updateSetting('seo', settings.seo || {});
-      toast({
-        title: 'Success',
-        description: 'SEO settings saved successfully',
-      });
+      toast({ title: 'Success', description: 'SEO settings saved successfully' });
     } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to save SEO settings',
-        variant: 'destructive',
-      });
+      toast({ title: 'Error', description: 'Failed to save SEO settings', variant: 'destructive' });
     }
     setSaving(false);
   };
@@ -115,18 +107,45 @@ export function AdminSettings() {
     try {
       await updateSetting('contact', settings.contact || {});
       await updateSetting('social', settings.social || {});
-      toast({
-        title: 'Success',
-        description: 'Contact settings saved successfully',
-      });
+      toast({ title: 'Success', description: 'Contact settings saved successfully' });
     } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to save contact settings',
-        variant: 'destructive',
-      });
+      toast({ title: 'Error', description: 'Failed to save contact settings', variant: 'destructive' });
     }
     setSaving(false);
+  };
+
+  const handleSaveEmail = async () => {
+    setSaving(true);
+    try {
+      await updateSetting('email', settings.email || {});
+      toast({ title: 'Success', description: 'Email configuration saved successfully' });
+    } catch (error) {
+      toast({ title: 'Error', description: 'Failed to save email configuration', variant: 'destructive' });
+    }
+    setSaving(false);
+  };
+
+  const handleTestConnection = async () => {
+    if (!settings.email?.smtpHost || !settings.email?.smtpUser || !settings.email?.smtpPass) {
+      toast({ title: 'Missing Info', description: 'Please fill in SMTP Host, User, and Password first.', variant: 'destructive' });
+      return;
+    }
+
+    setTesting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('send-email', {
+        body: {
+          type: 'test',
+          payload: { email: settings.email.smtpUser, name: 'Admin Test' },
+          config: settings.email
+        }
+      });
+      if (error) throw error;
+      toast({ title: 'Connection Successful', description: 'A test email has been sent to ' + settings.email.smtpUser });
+    } catch (error: any) {
+      toast({ title: 'Connection Failed', description: error.message || 'Check your SMTP credentials.', variant: 'destructive' });
+    }
+    setTesting(false);
   };
 
   if (loading) {
@@ -134,316 +153,109 @@ export function AdminSettings() {
   }
 
   return (
-    <div>
+    <div className="space-y-6">
       <h1 className="font-display text-3xl font-bold text-foreground mb-8">Site Settings</h1>
 
       <Tabs defaultValue="theme" className="space-y-6">
         <TabsList>
-          <TabsTrigger value="theme">
-            <Palette className="w-4 h-4 mr-2" />
-            Theme
-          </TabsTrigger>
-          <TabsTrigger value="seo">
-            <Globe className="w-4 h-4 mr-2" />
-            SEO
-          </TabsTrigger>
-          <TabsTrigger value="contact">
-            <Phone className="w-4 h-4 mr-2" />
-            Contact
-          </TabsTrigger>
+          <TabsTrigger value="theme"><Palette className="w-4 h-4 mr-2" /> Theme</TabsTrigger>
+          <TabsTrigger value="seo"><Globe className="w-4 h-4 mr-2" /> SEO</TabsTrigger>
+          <TabsTrigger value="contact"><Phone className="w-4 h-4 mr-2" /> Contact</TabsTrigger>
+          <TabsTrigger value="email"><Mail className="w-4 h-4 mr-2" /> Email Integration</TabsTrigger>
         </TabsList>
 
-        {/* Theme Settings */}
         <TabsContent value="theme">
           <div className="bg-card rounded-lg p-6 shadow-sm border border-border space-y-6">
-            <div>
-              <h2 className="font-display text-xl font-semibold mb-4">Color Scheme</h2>
-              <p className="text-sm text-muted-foreground mb-6">
-                Customize your site's color palette. Changes will be reflected across the entire website.
-              </p>
-
-              <div className="grid md:grid-cols-3 gap-6">
-                <div>
-                  <Label htmlFor="primary-color">Primary Color</Label>
-                  <div className="flex gap-2 mt-2">
-                    <Input
-                      id="primary-color"
-                      type="color"
-                      value={settings.theme?.primaryColor || '#3B82F6'}
-                      onChange={(e) =>
-                        setSettings({
-                          ...settings,
-                          theme: { ...settings.theme, primaryColor: e.target.value },
-                        })
-                      }
-                      className="w-20 h-10"
-                    />
-                    <Input
-                      type="text"
-                      value={settings.theme?.primaryColor || '#3B82F6'}
-                      onChange={(e) =>
-                        setSettings({
-                          ...settings,
-                          theme: { ...settings.theme, primaryColor: e.target.value },
-                        })
-                      }
-                      placeholder="#3B82F6"
-                    />
+            <h2 className="font-display text-xl font-semibold mb-4">Color Scheme</h2>
+            <div className="grid md:grid-cols-3 gap-6">
+              {['Primary', 'Secondary', 'Accent'].map((color) => {
+                const key = `${color.toLowerCase()}Color` as keyof NonNullable<SiteSettings['theme']>;
+                return (
+                  <div key={color}>
+                    <Label>{color} Color</Label>
+                    <div className="flex gap-2 mt-2">
+                      <Input
+                        type="color"
+                        value={settings.theme?.[key] || (color === 'Primary' ? '#3B82F6' : color === 'Secondary' ? '#8B5CF6' : '#F59E0B')}
+                        onChange={(e) => setSettings({ ...settings, theme: { ...settings.theme, [key]: e.target.value } })}
+                        className="w-20 h-10"
+                      />
+                      <Input
+                        type="text"
+                        value={settings.theme?.[key] || ''}
+                        onChange={(e) => setSettings({ ...settings, theme: { ...settings.theme, [key]: e.target.value } })}
+                      />
+                    </div>
                   </div>
-                </div>
-
-                <div>
-                  <Label htmlFor="secondary-color">Secondary Color</Label>
-                  <div className="flex gap-2 mt-2">
-                    <Input
-                      id="secondary-color"
-                      type="color"
-                      value={settings.theme?.secondaryColor || '#8B5CF6'}
-                      onChange={(e) =>
-                        setSettings({
-                          ...settings,
-                          theme: { ...settings.theme, secondaryColor: e.target.value },
-                        })
-                      }
-                      className="w-20 h-10"
-                    />
-                    <Input
-                      type="text"
-                      value={settings.theme?.secondaryColor || '#8B5CF6'}
-                      onChange={(e) =>
-                        setSettings({
-                          ...settings,
-                          theme: { ...settings.theme, secondaryColor: e.target.value },
-                        })
-                      }
-                      placeholder="#8B5CF6"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <Label htmlFor="accent-color">Accent Color</Label>
-                  <div className="flex gap-2 mt-2">
-                    <Input
-                      id="accent-color"
-                      type="color"
-                      value={settings.theme?.accentColor || '#F59E0B'}
-                      onChange={(e) =>
-                        setSettings({
-                          ...settings,
-                          theme: { ...settings.theme, accentColor: e.target.value },
-                        })
-                      }
-                      className="w-20 h-10"
-                    />
-                    <Input
-                      type="text"
-                      value={settings.theme?.accentColor || '#F59E0B'}
-                      onChange={(e) =>
-                        setSettings({
-                          ...settings,
-                          theme: { ...settings.theme, accentColor: e.target.value },
-                        })
-                      }
-                      placeholder="#F59E0B"
-                    />
-                  </div>
-                </div>
-              </div>
+                );
+              })}
             </div>
-
             <div className="flex justify-end pt-4 border-t">
-              <Button onClick={handleSaveTheme} disabled={saving}>
-                <Save className="w-4 h-4 mr-2" />
-                {saving ? 'Saving...' : 'Save Theme Settings'}
-              </Button>
+              <Button onClick={handleSaveTheme} disabled={saving}><Save className="w-4 h-4 mr-2" /> Save Theme </Button>
             </div>
           </div>
         </TabsContent>
 
-        {/* SEO Settings */}
         <TabsContent value="seo">
           <div className="bg-card rounded-lg p-6 shadow-sm border border-border space-y-6">
-            <div>
-              <h2 className="font-display text-xl font-semibold mb-4">SEO Configuration</h2>
-              <p className="text-sm text-muted-foreground mb-6">
-                Configure default SEO settings for your website. These will be used as fallbacks when specific pages don't have custom SEO data.
-              </p>
-
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="site-title">Site Title</Label>
-                  <Input
-                    id="site-title"
-                    value={settings.seo?.siteTitle || ''}
-                    onChange={(e) =>
-                      setSettings({
-                        ...settings,
-                        seo: { ...settings.seo, siteTitle: e.target.value },
-                      })
-                    }
-                    placeholder="Pak Cuisine - Authentic Pakistani Restaurant"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="site-description">Site Description</Label>
-                  <Textarea
-                    id="site-description"
-                    value={settings.seo?.siteDescription || ''}
-                    onChange={(e) =>
-                      setSettings({
-                        ...settings,
-                        seo: { ...settings.seo, siteDescription: e.target.value },
-                      })
-                    }
-                    placeholder="Experience authentic Pakistani cuisine with traditional recipes and modern flavors..."
-                    rows={4}
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="keywords">Keywords (comma-separated)</Label>
-                  <Input
-                    id="keywords"
-                    value={settings.seo?.keywords || ''}
-                    onChange={(e) =>
-                      setSettings({
-                        ...settings,
-                        seo: { ...settings.seo, keywords: e.target.value },
-                      })
-                    }
-                    placeholder="pakistani food, halal restaurant, biryani, karahi, authentic cuisine"
-                  />
-                </div>
+            <h2 className="font-display text-xl font-semibold mb-4">SEO Configuration</h2>
+            <div className="space-y-4">
+              <div>
+                <Label>Site Title</Label>
+                <Input value={settings.seo?.siteTitle || ''} onChange={(e) => setSettings({ ...settings, seo: { ...settings.seo, siteTitle: e.target.value } })} />
+              </div>
+              <div>
+                <Label>Site Description</Label>
+                <Textarea value={settings.seo?.siteDescription || ''} onChange={(e) => setSettings({ ...settings, seo: { ...settings.seo, siteDescription: e.target.value } })} rows={4} />
+              </div>
+              <div>
+                <Label>Keywords</Label>
+                <Input value={settings.seo?.keywords || ''} onChange={(e) => setSettings({ ...settings, seo: { ...settings.seo, keywords: e.target.value } })} />
               </div>
             </div>
-
             <div className="flex justify-end pt-4 border-t">
-              <Button onClick={handleSaveSEO} disabled={saving}>
-                <Save className="w-4 h-4 mr-2" />
-                {saving ? 'Saving...' : 'Save SEO Settings'}
-              </Button>
+              <Button onClick={handleSaveSEO} disabled={saving}><Save className="w-4 h-4 mr-2" /> Save SEO </Button>
             </div>
           </div>
         </TabsContent>
 
-        {/* Contact Settings */}
         <TabsContent value="contact">
           <div className="bg-card rounded-lg p-6 shadow-sm border border-border space-y-6">
-            <div>
-              <h2 className="font-display text-xl font-semibold mb-4">Contact Information</h2>
-              <p className="text-sm text-muted-foreground mb-6">
-                Update your restaurant's contact details and social media links.
-              </p>
-
-              <div className="space-y-6">
-                {/* Contact Details */}
-                <div className="space-y-4">
-                  <h3 className="font-semibold flex items-center gap-2">
-                    <Phone className="w-4 h-4" />
-                    Contact Details
-                  </h3>
-                  <div>
-                    <Label htmlFor="phone">Phone Number</Label>
-                    <Input
-                      id="phone"
-                      value={settings.contact?.phone || ''}
-                      onChange={(e) =>
-                        setSettings({
-                          ...settings,
-                          contact: { ...settings.contact, phone: e.target.value },
-                        })
-                      }
-                      placeholder="+1 (555) 123-4567"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="email">Email Address</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={settings.contact?.email || ''}
-                      onChange={(e) =>
-                        setSettings({
-                          ...settings,
-                          contact: { ...settings.contact, email: e.target.value },
-                        })
-                      }
-                      placeholder="info@pakcuisine.com"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="address">Address</Label>
-                    <Textarea
-                      id="address"
-                      value={settings.contact?.address || ''}
-                      onChange={(e) =>
-                        setSettings({
-                          ...settings,
-                          contact: { ...settings.contact, address: e.target.value },
-                        })
-                      }
-                      placeholder="123 Main Street, City, State 12345"
-                      rows={3}
-                    />
-                  </div>
-                </div>
-
-                {/* Social Media */}
-                <div className="space-y-4 pt-4 border-t">
-                  <h3 className="font-semibold">Social Media Links</h3>
-                  <div>
-                    <Label htmlFor="facebook">Facebook URL</Label>
-                    <Input
-                      id="facebook"
-                      value={settings.social?.facebook || ''}
-                      onChange={(e) =>
-                        setSettings({
-                          ...settings,
-                          social: { ...settings.social, facebook: e.target.value },
-                        })
-                      }
-                      placeholder="https://facebook.com/pakcuisine"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="instagram">Instagram URL</Label>
-                    <Input
-                      id="instagram"
-                      value={settings.social?.instagram || ''}
-                      onChange={(e) =>
-                        setSettings({
-                          ...settings,
-                          social: { ...settings.social, instagram: e.target.value },
-                        })
-                      }
-                      placeholder="https://instagram.com/pakcuisine"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="twitter">Twitter/X URL</Label>
-                    <Input
-                      id="twitter"
-                      value={settings.social?.twitter || ''}
-                      onChange={(e) =>
-                        setSettings({
-                          ...settings,
-                          social: { ...settings.social, twitter: e.target.value },
-                        })
-                      }
-                      placeholder="https://twitter.com/pakcuisine"
-                    />
-                  </div>
-                </div>
+            <h2 className="font-display text-xl font-semibold mb-4">Contact Information</h2>
+            <div className="space-y-4">
+              <Input placeholder="Phone" value={settings.contact?.phone || ''} onChange={(e) => setSettings({ ...settings, contact: { ...settings.contact, phone: e.target.value } })} />
+              <Input placeholder="Email" value={settings.contact?.email || ''} onChange={(e) => setSettings({ ...settings, contact: { ...settings.contact, email: e.target.value } })} />
+              <Textarea placeholder="Address" value={settings.contact?.address || ''} onChange={(e) => setSettings({ ...settings, contact: { ...settings.contact, address: e.target.value } })} />
+              <div className="pt-4 border-t space-y-4">
+                <h3 className="font-semibold">Social Media</h3>
+                <Input placeholder="Facebook" value={settings.social?.facebook || ''} onChange={(e) => setSettings({ ...settings, social: { ...settings.social, facebook: e.target.value } })} />
+                <Input placeholder="Instagram" value={settings.social?.instagram || ''} onChange={(e) => setSettings({ ...settings, social: { ...settings.social, instagram: e.target.value } })} />
               </div>
             </div>
-
             <div className="flex justify-end pt-4 border-t">
-              <Button onClick={handleSaveContact} disabled={saving}>
-                <Save className="w-4 h-4 mr-2" />
-                {saving ? 'Saving...' : 'Save Contact Settings'}
-              </Button>
+              <Button onClick={handleSaveContact} disabled={saving}><Save className="w-4 h-4 mr-2" /> Save Contact </Button>
+            </div>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="email">
+          <div className="bg-card rounded-lg p-6 shadow-sm border border-border space-y-6">
+            <h2 className="font-display text-xl font-semibold mb-2">SMTP / Outlook Configuration</h2>
+            <div className="space-y-4 max-w-2xl">
+              <div className="grid grid-cols-2 gap-4">
+                <Input placeholder="SMTP Host" value={settings.email?.smtpHost || ''} onChange={(e) => setSettings({ ...settings, email: { ...settings.email, smtpHost: e.target.value } })} />
+                <Input placeholder="587" value={settings.email?.smtpPort || ''} onChange={(e) => setSettings({ ...settings, email: { ...settings.email, smtpPort: e.target.value } })} />
+              </div>
+              <Input placeholder="Email/User" value={settings.email?.smtpUser || ''} onChange={(e) => setSettings({ ...settings, email: { ...settings.email, smtpUser: e.target.value } })} />
+              <div className="relative">
+                <Input type={showPassword ? "text" : "password"} placeholder="Password" value={settings.email?.smtpPass || ''} onChange={(e) => setSettings({ ...settings, email: { ...settings.email, smtpPass: e.target.value } })} />
+                <Button variant="ghost" size="icon" className="absolute right-0 top-0" onClick={() => setShowPassword(!showPassword)}>{showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}</Button>
+              </div>
+              <Input placeholder="Sender Name" value={settings.email?.senderName || ''} onChange={(e) => setSettings({ ...settings, email: { ...settings.email, senderName: e.target.value } })} />
+            </div>
+            <div className="flex justify-between pt-6 border-t">
+              <Button variant="outline" onClick={handleTestConnection} disabled={testing}><ShieldCheck className="w-4 h-4 mr-2" /> Test </Button>
+              <Button onClick={handleSaveEmail} disabled={saving}><Save className="w-4 h-4 mr-2" /> Save Email </Button>
             </div>
           </div>
         </TabsContent>

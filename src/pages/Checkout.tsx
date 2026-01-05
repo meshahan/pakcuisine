@@ -167,10 +167,18 @@ export default function Checkout() {
             });
 
             if (emailError) {
-                console.error("Confirmation system error:", emailError);
-            } else {
-                console.log("Email function result:", emailResult);
+                console.error("Order admin alert error:", emailError);
             }
+
+            // 4. Send Customer Confirmation Email
+            await supabase.functions.invoke('send-email', {
+                body: {
+                    type: 'order',
+                    template: 'customer_confirmation',
+                    payload: emailPayload,
+                    items: items
+                }
+            });
 
             // Success
             setSuccess(true);

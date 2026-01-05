@@ -1,6 +1,15 @@
--- Insert initial deals
+-- Ensure table columns exist
+DO $$ 
+BEGIN 
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='deals' AND column_name='is_active') THEN
+        ALTER TABLE public.deals ADD COLUMN is_active BOOLEAN DEFAULT true;
+    END IF;
+END $$;
+
+-- Insert initial deals if table is empty
 INSERT INTO deals (title, description, price, original_price, image_url, is_active)
-VALUES
+SELECT title, description, price, original_price, image_url, is_active FROM (
+    VALUES
     (
         'Crispy Golden Broast', 
         'Quarter leg piece fried to perfection, served with crispy fries, dinner bun, and our signature garlic sauce.', 
@@ -32,7 +41,9 @@ VALUES
         14.50, 
         'https://images.unsplash.com/photo-1626777552726-4a6b54c97e46?q=80&w=1000&auto=format&fit=crop',
         true
-    ),
+    )
+) AS t(title, description, price, original_price, image_url, is_active)
+WHERE NOT EXISTS (SELECT 1 FROM deals);
     (
         'Double Zinger Feast', 
         'Double the crunch! 2 delicious Zinger Burgers served with a large portion of hot fries and a cold drink.', 

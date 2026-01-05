@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Star } from "lucide-react";
+import { ArrowRight, Star, ChevronDown } from "lucide-react";
 
 export function HeroSection() {
   return (
@@ -86,9 +86,10 @@ export function HeroSection() {
       </div>
 
       {/* Scroll Indicator */}
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce">
-        <div className="w-6 h-10 border-2 border-primary-foreground/50 rounded-full flex justify-center">
-          <div className="w-1.5 h-3 bg-primary-foreground/50 rounded-full mt-2 animate-pulse" />
+      <div className="absolute bottom-10 left-1/2 -translate-x-1/2 animate-bounce cursor-pointer flex flex-col items-center gap-2 opacity-80 hover:opacity-100 transition-opacity" onClick={() => window.scrollTo({ top: window.innerHeight, behavior: 'smooth' })}>
+        <span className="text-white/50 text-[10px] font-bold uppercase tracking-[0.2em]">Scroll</span>
+        <div className="w-10 h-10 rounded-full border-2 border-primary/20 flex items-center justify-center bg-white/5 backdrop-blur-sm">
+          <ChevronDown className="w-6 h-6 text-primary" />
         </div>
       </div>
     </section>

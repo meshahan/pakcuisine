@@ -33,3 +33,11 @@ CREATE POLICY "Public can subscribe" ON public.subscribers
 DROP POLICY IF EXISTS "Public can view own subscription" ON public.subscribers;
 CREATE POLICY "Public can view own subscription" ON public.subscribers
     FOR SELECT USING (true);
+-- 5. Fix Contact Submissions RLS
+DROP POLICY IF EXISTS "Allow public insert contact" ON public.contact_submissions;
+CREATE POLICY "Allow public insert contact" ON public.contact_submissions
+    FOR INSERT WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Allow public read contact" ON public.contact_submissions;
+CREATE POLICY "Allow public read contact" ON public.contact_submissions
+    FOR SELECT USING (true);

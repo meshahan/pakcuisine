@@ -124,8 +124,18 @@ const Reservations = () => {
       });
 
       if (emailError) {
-        console.error("Reservation confirmation system error:", emailError);
+        console.error("Reservation admin alert error:", emailError);
       }
+
+      // 4. Send Customer Confirmation Email
+      await supabase.functions.invoke('send-email', {
+        body: {
+          type: 'reservation',
+          template: 'customer_confirmation',
+          payload: reservation,
+          items: preOrder
+        }
+      });
 
       setIsSuccess(true);
       toast({
@@ -299,7 +309,7 @@ const Reservations = () => {
 
                   {/* Right Column: Pre-order Food */}
                   <div className="lg:col-span-5">
-                    <section className="sticky top-32 space-y-6">
+                    <section className="lg:sticky lg:top-32 space-y-6">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                           <span className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">3</span>

@@ -27,18 +27,24 @@ const Contact = () => {
     setIsSubmitting(true);
 
     try {
-      // Send to Formspree
-      const response = await fetch("https://formspree.io/f/xojvplby", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(formData),
+      // 1. Send via Edge Function (handles SMTP/Formspree/Resend)
+      const { error: emailError } = await supabase.functions.invoke("send-email", {
+        body: {
+          type: "contact",
+          template: "admin_alert",
+          payload: {
+            name: formData.name,
+            email: formData.email,
+            subject: formData.subject,
+            message: formData.message,
+            phone: formData.phone
+          }
+        }
       });
 
-      if (!response.ok) throw new Error("Failed to send message to Formspree");
+      if (emailError) throw emailError;
 
-      // Also log to Supabase
+      // 2. Also log to Supabase
       await supabase.from("contact_submissions").insert({
         name: formData.name,
         email: formData.email,
