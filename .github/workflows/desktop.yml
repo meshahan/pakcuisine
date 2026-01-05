@@ -27,7 +27,7 @@ jobs:
         run: npm run build
 
       - name: Packaging Electron App
-        run: npx electron-builder --windows --publish never -c.cscLink=null
+        run: npm run build:win
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: false
           CSC_SKIP_SIGNING: true
