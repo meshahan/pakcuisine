@@ -16,8 +16,10 @@ To empower restaurant owners with a state-of-the-art digital storefront that is 
 | Layer | Technology |
 | :--- | :--- |
 | **Frontend** | React 18 (Vite), TypeScript, Tailwind CSS, shadcn/ui |
-| **Animations** | Framer Motion, Lucide Icons |
+| **Platforms** | Web, Android (APK), Windows Desktop (.exe) |
+| **Animations** | Framer Motion (Premium Polish), Lucide Icons |
 | **Backend** | Supabase (PostgreSQL, Auth, Edge Functions) |
+| **Email** | Custom SMTP (Outlook/Gmail) with Fallbacks |
 | **Payments** | Stripe API Integration |
 | **AI/Engagement** | Context-Aware Chatbot (Custom Logic) |
 | **Charts** | Recharts (Admin Analytics) |
@@ -83,7 +85,9 @@ npx supabase functions serve payment --no-verify-jwt
 ### **2. Order & Payment Flow 💳**
 - **Shopping Cart**: Persistent local storage cart.
 - **Smart Checkout**: Supports Cash on Delivery and Stripe Payments.
-- **Auto-Emailer**: Integrated with Formspree for delivery notifications.
+- **Unified Email Gateway**: Integrated SMTP/Outlook support for automated customer confirmations and admin alerts.
+- **Branded Touchpoints**: Custom burger app icons for mobile and desktop for a premium identity.
+- **Cross-Platform**: Automated CI/CD pipelines to generate production-ready Android APKs and Windows installers.
 
 ### **3. Admin CMS Panel 🔐**
 - **Dashboard**: Real-time sales charts and order tracking.
