@@ -27,11 +27,11 @@ jobs:
         run: npm run build
 
       - name: Packaging Electron App
-        run: npx electron-builder --windows -c.publish=never
+        run: npx electron-builder --windows --publish never -c.cscLink=null
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: false
           CSC_SKIP_SIGNING: true
-          WIN_CSC_LINK: ""
+          DEBUG: electron-builder
           NODE_ENV: production
 
       - name: Upload Windows Setup
