@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Helmet } from "react-helmet-async";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
@@ -12,14 +12,6 @@ import { useToast } from "@/hooks/use-toast";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 
-const dishes = [
-  { id: 1, name: "Special Chicken Biryani", price: 18.99, image: "biryani" },
-  { id: 2, name: "Chapli Kebab", price: 13.99, image: "kebab" },
-  { id: 3, name: "Lahori Chargha", price: 25.99, image: "chargha" },
-  { id: 4, name: "Mutton Karahi", price: 22.99, image: "karahi" },
-  { id: 5, name: "Garlic Naan", price: 3.99, image: "naan" },
-];
-
 const timeSlots = [
   "18:00", "18:30", "19:00", "19:30",
   "20:00", "20:30", "21:00", "21:30"
@@ -30,28 +22,104 @@ const Reservations = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [dishes, setDishes] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchFoodItems = async () => {
+      // Fetch both menu items and deals
+      const [menuRes, dealsRes] = await Promise.all([
+        supabase.from('menu_items').select('*').eq('is_available', true),
+        supabase.from('deals').select('*').eq('is_active', true)
+      ]);
+
+      const allItems = [
+        ...(menuRes.data || []).map(i => ({ ...i, image: i.image_url })),
+        ...(dealsRes.data || []).map(d => ({ ...d, name: d.title, image: d.image_url, isDeal: true }))
+      ];
+
+      setDishes(allItems);
+    };
+
+    fetchFoodItems();
+  }, []);
 
   const [formData, setFormData] = useState({
     guest_name: "",
     guest_email: "",
     guest_phone: "",
     party_size: 2,
-    reservation_date: "2026-04-01",
+    reservation_date: new Date().toISOString().split('T')[0],
     reservation_time: "19:30",
     special_requests: "",
   });
 
   const [preOrder, setPreOrder] = useState<any[]>([]);
 
+  // 1. Auto-fill from profile if logged in
+  useEffect(() => {
+    const fetchProfile = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+
+      if (profile) {
+        setFormData(prev => ({
+          ...prev,
+          guest_name: profile.full_name || prev.guest_name,
+          guest_email: profile.email || prev.guest_email,
+          guest_phone: profile.phone || prev.guest_phone,
+        }));
+      }
+    };
+
+    fetchProfile();
+  }, []);
+
+  // 2. Load drafts on mount (overrides profile if exists)
+  useEffect(() => {
+    const savedDraft = localStorage.getItem("reservation_draft");
+    const savedPreOrder = localStorage.getItem("reservation_preorder");
+
+    if (savedDraft) {
+      try {
+        setFormData(prev => ({ ...prev, ...JSON.parse(savedDraft) }));
+      } catch (e) {
+        console.error("Failed to parse reservation draft", e);
+      }
+    }
+
+    if (savedPreOrder) {
+      try {
+        setPreOrder(JSON.parse(savedPreOrder));
+      } catch (e) {
+        console.error("Failed to parse reservation pre-order", e);
+      }
+    }
+  }, []);
+
+  // 2. Persist drafts on change
+  useEffect(() => {
+    localStorage.setItem("reservation_draft", JSON.stringify(formData));
+  }, [formData]);
+
+  useEffect(() => {
+    localStorage.setItem("reservation_preorder", JSON.stringify(preOrder));
+  }, [preOrder]);
+
   const filteredDishes = useMemo(() => {
     return dishes.filter(d => d.name.toLowerCase().includes(searchQuery.toLowerCase()));
-  }, [searchQuery]);
+  }, [searchQuery, dishes]);
 
   const totalToPrepare = useMemo(() => {
     return preOrder.reduce((acc, item) => acc + (item.price * item.quantity), 0);
   }, [preOrder]);
 
-  const handleUpdateQuantity = (id: number, delta: number) => {
+  const handleUpdateQuantity = (id: string, delta: number) => {
     setPreOrder(prev => {
       const existing = prev.find(item => item.id === id);
       if (existing) {
@@ -65,7 +133,7 @@ const Reservations = () => {
     });
   };
 
-  const handleRemoveItem = (id: number) => {
+  const handleRemoveItem = (id: string) => {
     setPreOrder(prev => prev.filter(item => item.id !== id));
   };
 
@@ -98,6 +166,7 @@ const Reservations = () => {
     try {
       // Prepare data for Formspree
       // 2. Log to Supabase
+      const { data: { user } } = await supabase.auth.getUser();
       const { data: reservation, error } = await supabase.from("reservations").insert({
         guest_name: formData.guest_name,
         guest_email: formData.guest_email,
@@ -107,6 +176,8 @@ const Reservations = () => {
         reservation_time: formData.reservation_time,
         special_requests: formData.special_requests || null,
         status: "pending",
+        pre_order: preOrder, // NEW: Include the pre-ordered food items
+        user_id: user?.id || null,
       })
         .select()
         .single();
@@ -137,7 +208,23 @@ const Reservations = () => {
         }
       });
 
+      // Update profile with latest info
+      if (user) {
+        await supabase
+          .from('profiles')
+          .upsert({
+            id: user.id,
+            full_name: formData.guest_name,
+            email: formData.guest_email,
+            phone: formData.guest_phone,
+            updated_at: new Date().toISOString()
+          });
+      }
+
       setIsSuccess(true);
+      setPreOrder([]);
+      localStorage.removeItem("reservation_draft");
+      localStorage.removeItem("reservation_preorder");
       toast({
         title: "Reservation Submitted!",
         description: "We'll confirm your booking shortly via email.",
@@ -151,6 +238,20 @@ const Reservations = () => {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const resetForm = () => {
+    setFormData({
+      guest_name: "",
+      guest_email: "",
+      guest_phone: "",
+      party_size: 2,
+      reservation_date: new Date().toISOString().split('T')[0],
+      reservation_time: "19:30",
+      special_requests: "",
+    });
+    setPreOrder([]);
+    setIsSuccess(false);
   };
 
   return (
@@ -181,7 +282,7 @@ const Reservations = () => {
                   <span className="text-primary font-bold">{new Date(formData.reservation_date).toLocaleDateString()}</span> at{" "}
                   <span className="text-primary font-bold">{formData.reservation_time}</span>.
                 </p>
-                <Button size="lg" onClick={() => setIsSuccess(false)} className="bg-gradient-primary">
+                <Button size="lg" onClick={resetForm} className="bg-gradient-primary">
                   Make Another Reservation
                 </Button>
               </motion.div>

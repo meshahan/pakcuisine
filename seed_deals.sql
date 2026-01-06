@@ -41,9 +41,7 @@ SELECT title, description, price, original_price, image_url, is_active FROM (
         14.50, 
         'https://images.unsplash.com/photo-1626777552726-4a6b54c97e46?q=80&w=1000&auto=format&fit=crop',
         true
-    )
-) AS t(title, description, price, original_price, image_url, is_active)
-WHERE NOT EXISTS (SELECT 1 FROM deals);
+    ),
     (
         'Double Zinger Feast', 
         'Double the crunch! 2 delicious Zinger Burgers served with a large portion of hot fries and a cold drink.', 
@@ -59,4 +57,6 @@ WHERE NOT EXISTS (SELECT 1 FROM deals);
         13.50, 
         'https://images.unsplash.com/photo-1599487488170-d11ec9c172f0?q=80&w=1000&auto=format&fit=crop',
         true
-    );
+    )
+) AS t(title, description, price, original_price, image_url, is_active)
+WHERE NOT EXISTS (SELECT 1 FROM deals);

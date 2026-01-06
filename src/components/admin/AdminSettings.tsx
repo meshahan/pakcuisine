@@ -44,6 +44,8 @@ export function AdminSettings() {
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [changingPassword, setChangingPassword] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -147,6 +149,23 @@ export function AdminSettings() {
     }
     setTesting(false);
   };
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newPassword.length < 6) {
+      toast({ title: 'Weak Password', description: 'Password must be at least 6 characters.', variant: 'destructive' });
+      return;
+    }
+    setChangingPassword(true);
+    try {
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      if (error) throw error;
+      toast({ title: 'Password Updated', description: 'Your password has been changed successfully.' });
+      setNewPassword('');
+    } catch (error: any) {
+      toast({ title: 'Error', description: error.message || 'Failed to update password.', variant: 'destructive' });
+    }
+    setChangingPassword(false);
+  };
 
   if (loading) {
     return <div className="text-center py-12 text-muted-foreground">Loading...</div>;
@@ -162,6 +181,7 @@ export function AdminSettings() {
           <TabsTrigger value="seo"><Globe className="w-4 h-4 mr-2" /> SEO</TabsTrigger>
           <TabsTrigger value="contact"><Phone className="w-4 h-4 mr-2" /> Contact</TabsTrigger>
           <TabsTrigger value="email"><Mail className="w-4 h-4 mr-2" /> Email Integration</TabsTrigger>
+          <TabsTrigger value="security"><ShieldCheck className="w-4 h-4 mr-2" /> Security</TabsTrigger>
         </TabsList>
 
         <TabsContent value="theme">
@@ -227,6 +247,14 @@ export function AdminSettings() {
               <Input placeholder="Email" value={settings.contact?.email || ''} onChange={(e) => setSettings({ ...settings, contact: { ...settings.contact, email: e.target.value } })} />
               <Textarea placeholder="Address" value={settings.contact?.address || ''} onChange={(e) => setSettings({ ...settings, contact: { ...settings.contact, address: e.target.value } })} />
               <div className="pt-4 border-t space-y-4">
+                <h3 className="font-semibold">Business Notifications</h3>
+                <div className="space-y-2">
+                  <Label>Admin Notification Email (Order/Reservation Alerts)</Label>
+                  <Input placeholder="admin@pakcuisine.com" value={settings.contact?.admin_email || ''} onChange={(e) => setSettings({ ...settings, contact: { ...settings.contact, admin_email: e.target.value } })} />
+                  <p className="text-xs text-muted-foreground italic">Important: This is where you will receive order alerts.</p>
+                </div>
+              </div>
+              <div className="pt-4 border-t space-y-4">
                 <h3 className="font-semibold">Social Media</h3>
                 <Input placeholder="Facebook" value={settings.social?.facebook || ''} onChange={(e) => setSettings({ ...settings, social: { ...settings.social, facebook: e.target.value } })} />
                 <Input placeholder="Instagram" value={settings.social?.instagram || ''} onChange={(e) => setSettings({ ...settings, social: { ...settings.social, instagram: e.target.value } })} />
@@ -257,6 +285,37 @@ export function AdminSettings() {
               <Button variant="outline" onClick={handleTestConnection} disabled={testing}><ShieldCheck className="w-4 h-4 mr-2" /> Test </Button>
               <Button onClick={handleSaveEmail} disabled={saving}><Save className="w-4 h-4 mr-2" /> Save Email </Button>
             </div>
+          </div>
+        </TabsContent>
+        <TabsContent value="security">
+          <div className="bg-card rounded-lg p-6 shadow-sm border border-border space-y-6">
+            <h2 className="font-display text-xl font-semibold mb-4">Account Security</h2>
+            <form onSubmit={handleChangePassword} className="space-y-4 max-w-md">
+              <div className="space-y-2">
+                <Label>Set New Password</Label>
+                <div className="relative">
+                  <Input
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Enter new password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    required
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-0 top-0"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </Button>
+                </div>
+              </div>
+              <Button type="submit" disabled={changingPassword}>
+                {changingPassword ? "Updating..." : "Update Password"}
+              </Button>
+            </form>
           </div>
         </TabsContent>
       </Tabs>

@@ -185,6 +185,8 @@ create policy "Enable all access for authenticated users on site settings"
 
 -- Initial Data for Site Settings
 insert into public.site_settings (key, value) values
-('theme', '{"primary": "#F97316", "secondary": "#F59E0B", "accent": "#10B981"}'),
-('seo', '{"title": "Pak Cuisine", "description": "Authentic Pakistani Flavors", "keywords": "pakistani food, halal, dining"}'),
-('contact', '{"phone": "+1 234 567 890", "email": "info@pakcuisine.com", "address": "123 Spice Street, Food City", "facebook": "", "instagram": "", "twitter": ""}');
+('theme', '{"primary": "#E11D48", "secondary": "#1F2937", "accent": "#F59E0B"}'),
+('seo', '{"title": "Pak Cuisine | Authentic Flavors", "description": "Delicious Pakistani cuisine delivered to your doorstep.", "keywords": "pakistani food, halal, dining"}'),
+('contact', '{"phone": "+92 304 1845557", "email": "info@pak-cuisine.com", "address": "Main Boulevard, Lahore, Pakistan", "admin_email": "meshahan@gmail.com"}'),
+('social', '{"facebook": "#", "instagram": "#", "twitter": "#"}'),
+('email', '{"smtpHost": "", "smtpPort": "587", "smtpUser": "", "smtpPass": "", "senderName": "Pak Cuisine"}');

@@ -1,97 +1,42 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Helmet } from "react-helmet-async";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { X, ChevronLeft, ChevronRight } from "lucide-react";
-
-const galleryImages = [
-  {
-    id: 1,
-    url: "https://images.unsplash.com/photo-1585937421612-70a008356fbe?q=80&w=800&auto=format&fit=crop",
-    caption: "Signature Chicken Biryani",
-    category: "food",
-  },
-  {
-    id: 2,
-    url: "https://images.unsplash.com/photo-1596797038530-2c107229654b?q=80&w=800&auto=format&fit=crop",
-    caption: "Elegant Dining Area",
-    category: "interior",
-  },
-  {
-    id: 3,
-    url: "https://images.unsplash.com/photo-1545247181-516773cae754?q=80&w=800&auto=format&fit=crop",
-    caption: "Lamb Karahi",
-    category: "food",
-  },
-  {
-    id: 4,
-    url: "https://images.unsplash.com/photo-1631515243349-e0cb75fb8d3a?q=80&w=800&auto=format&fit=crop",
-    caption: "Fresh Spices",
-    category: "kitchen",
-  },
-  {
-    id: 5,
-    url: "https://images.unsplash.com/photo-1574653853027-5382a3d23a15?q=80&w=800&auto=format&fit=crop",
-    caption: "Seekh Kebabs",
-    category: "food",
-  },
-  {
-    id: 6,
-    url: "https://images.unsplash.com/photo-1567188040759-fb8a883dc6d8?q=80&w=800&auto=format&fit=crop",
-    caption: "Chef Preparing Dishes",
-    category: "kitchen",
-  },
-  {
-    id: 7,
-    url: "https://images.unsplash.com/photo-1603894584373-5ac82b2ae398?q=80&w=800&auto=format&fit=crop",
-    caption: "Butter Chicken",
-    category: "food",
-  },
-  {
-    id: 8,
-    url: "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?q=80&w=800&auto=format&fit=crop",
-    caption: "Private Dining Room",
-    category: "interior",
-  },
-  {
-    id: 9,
-    url: "https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?q=80&w=800&auto=format&fit=crop",
-    caption: "Special Biryani",
-    category: "food",
-  },
-  {
-    id: 10,
-    url: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?q=80&w=800&auto=format&fit=crop",
-    caption: "Restaurant Ambiance",
-    category: "interior",
-  },
-  {
-    id: 11,
-    url: "https://images.unsplash.com/photo-1599487488170-d11ec9c172f0?q=80&w=800&auto=format&fit=crop",
-    caption: "Grilled Kebabs",
-    category: "food",
-  },
-  {
-    id: 12,
-    url: "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?q=80&w=800&auto=format&fit=crop",
-    caption: "Fine Dining Setup",
-    category: "interior",
-  },
-];
+import { X, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 const Gallery = () => {
   const [selectedImage, setSelectedImage] = useState<number | null>(null);
+  const [images, setImages] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchImages = async () => {
+      const { data, error } = await supabase
+        .from('gallery_images')
+        .select('*')
+        .eq('is_visible', true)
+        .order('display_order', { ascending: true });
+
+      if (!error && data) {
+        setImages(data);
+      }
+      setLoading(false);
+    };
+
+    fetchImages();
+  }, []);
 
   const handlePrev = () => {
     if (selectedImage !== null) {
-      setSelectedImage(selectedImage === 0 ? galleryImages.length - 1 : selectedImage - 1);
+      setSelectedImage(selectedImage === 0 ? images.length - 1 : selectedImage - 1);
     }
   };
 
   const handleNext = () => {
     if (selectedImage !== null) {
-      setSelectedImage(selectedImage === galleryImages.length - 1 ? 0 : selectedImage + 1);
+      setSelectedImage(selectedImage === images.length - 1 ? 0 : selectedImage + 1);
     }
   };
 
@@ -107,7 +52,7 @@ const Gallery = () => {
 
       <div className="min-h-screen">
         <Navbar />
-        
+
         <main className="pt-24">
           {/* Hero */}
           <section className="bg-secondary py-16 relative overflow-hidden">
@@ -123,39 +68,58 @@ const Gallery = () => {
           </section>
 
           {/* Gallery Grid */}
-          <section className="py-16 bg-background">
+          <section className="py-16 bg-background min-h-[400px]">
             <div className="container mx-auto px-4">
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {galleryImages.map((image, index) => (
-                  <div
-                    key={image.id}
-                    className="relative aspect-square overflow-hidden rounded-xl cursor-pointer group animate-fade-up"
-                    style={{ animationDelay: `${index * 0.05}s` }}
-                    onClick={() => setSelectedImage(index)}
-                  >
-                    <img
-                      src={image.url}
-                      alt={image.caption}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-foreground/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4">
-                      <p className="text-primary-foreground font-medium">{image.caption}</p>
+              {loading ? (
+                <div className="flex justify-center py-20">
+                  <Loader2 className="w-10 h-10 animate-spin text-primary" />
+                </div>
+              ) : images.length === 0 ? (
+                <div className="text-center py-20 text-muted-foreground">
+                  Our galley is being updated. Please check back soon!
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {images.map((image, index) => (
+                    <div
+                      key={image.id}
+                      className="group animate-fade-up bg-card rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300"
+                      style={{ animationDelay: `${index * 0.05}s` }}
+                    >
+                      <div
+                        className="relative aspect-[4/3] overflow-hidden cursor-pointer"
+                        onClick={() => setSelectedImage(index)}
+                      >
+                        <img
+                          src={image.image_url}
+                          alt={image.caption || "Gallery image"}
+                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-foreground/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                      </div>
+                      {image.caption && (
+                        <div className="p-4 bg-card border-t border-border">
+                          <p className="text-sm font-medium text-foreground leading-relaxed">
+                            {image.caption}
+                          </p>
+                        </div>
+                      )}
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
           </section>
         </main>
 
         {/* Lightbox */}
         <Dialog open={selectedImage !== null} onOpenChange={() => setSelectedImage(null)}>
-          <DialogContent className="max-w-4xl bg-foreground/95 border-none p-0">
-            {selectedImage !== null && (
+          <DialogContent className="max-w-4xl bg-foreground/95 border-none p-0 outline-none">
+            {selectedImage !== null && images[selectedImage] && (
               <div className="relative">
                 <img
-                  src={galleryImages[selectedImage].url}
-                  alt={galleryImages[selectedImage].caption}
+                  src={images[selectedImage].image_url}
+                  alt={images[selectedImage].caption || ""}
                   className="w-full h-auto max-h-[80vh] object-contain"
                 />
                 <button
@@ -178,7 +142,7 @@ const Gallery = () => {
                 </button>
                 <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-foreground/80 to-transparent">
                   <p className="text-primary-foreground text-center font-medium">
-                    {galleryImages[selectedImage].caption}
+                    {images[selectedImage].caption}
                   </p>
                 </div>
               </div>

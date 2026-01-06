@@ -17,6 +17,7 @@ import { loadStripe } from "@stripe/stripe-js";
 import { Elements } from "@stripe/react-stripe-js";
 import StripePaymentForm from "@/components/checkout/StripePaymentForm";
 import { cn } from "@/lib/utils";
+import { addMinutes } from "date-fns";
 
 // Initialize Stripe
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || "");
@@ -37,6 +38,49 @@ export default function Checkout() {
         instructions: "",
         paymentMethod: "cod",
     });
+
+    // 1. Auto-fill from profile if logged in
+    useEffect(() => {
+        const fetchProfile = async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return;
+
+            const { data: profile } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', user.id)
+                .single();
+
+            if (profile) {
+                setFormData(prev => ({
+                    ...prev,
+                    name: profile.full_name || prev.name,
+                    email: profile.email || prev.email,
+                    phone: profile.phone || prev.phone,
+                    address: profile.address || prev.address,
+                }));
+            }
+        };
+
+        fetchProfile();
+    }, []);
+
+    // 2. Load checkout draft on mount (overrides profile if exists)
+    useEffect(() => {
+        const savedDraft = localStorage.getItem("checkout_draft");
+        if (savedDraft) {
+            try {
+                setFormData(prev => ({ ...prev, ...JSON.parse(savedDraft) }));
+            } catch (e) {
+                console.error("Failed to parse checkout draft", e);
+            }
+        }
+    }, []);
+
+    // 2. Persist checkout draft on change
+    useEffect(() => {
+        localStorage.setItem("checkout_draft", JSON.stringify(formData));
+    }, [formData]);
 
     // Fetch PaymentIntent when payment method changes to 'card'
     useEffect(() => {
@@ -96,6 +140,7 @@ export default function Checkout() {
         setLoading(true);
         try {
             // 1. Create Order in Supabase
+            const { data: { user } } = await supabase.auth.getUser();
             const { data: order, error: orderError } = await supabase
                 .from("orders")
                 .insert({
@@ -107,6 +152,8 @@ export default function Checkout() {
                     payment_status: TransactionId ? "paid" : "pending",
                     total_amount: cartTotal,
                     special_instructions: formData.instructions,
+                    user_id: user?.id || null,
+                    estimated_delivery_time: addMinutes(new Date(), 45).toISOString(),
                 })
                 .select()
                 .single();
@@ -153,8 +200,8 @@ export default function Checkout() {
                 customer_email: order.customer_email || formData.email,
                 customer_phone: order.customer_phone || formData.phone,
                 delivery_address: order.delivery_address || formData.address,
-                total_amount: order.total_amount || totalAmount,
-                payment_method: order.payment_method || paymentMethod,
+                total_amount: order.total_amount || cartTotal,
+                payment_method: order.payment_method || formData.paymentMethod,
             };
 
             const { data: emailResult, error: emailError } = await supabase.functions.invoke('send-email', {
@@ -181,8 +228,23 @@ export default function Checkout() {
             });
 
             // Success
+            // Update profile with latest info
+            if (user) {
+                await supabase
+                    .from('profiles')
+                    .upsert({
+                        id: user.id,
+                        full_name: formData.name,
+                        email: formData.email,
+                        phone: formData.phone,
+                        address: formData.address,
+                        updated_at: new Date().toISOString()
+                    });
+            }
+
             setSuccess(true);
             clearCart();
+            localStorage.removeItem("checkout_draft");
             toast({
                 title: "Order Placed Successfully!",
                 description: "We'll start preparing your food right away.",
@@ -228,6 +290,19 @@ export default function Checkout() {
         placeOrder();
     };
 
+    const resetAndNavigate = () => {
+        setFormData({
+            name: "",
+            email: "",
+            phone: "",
+            address: "",
+            instructions: "",
+            paymentMethod: "cod",
+        });
+        setSuccess(false);
+        navigate("/menu");
+    };
+
     if (success) {
         return (
             <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-muted text-center">
@@ -238,7 +313,7 @@ export default function Checkout() {
                 <p className="text-muted-foreground mb-8 max-w-md">
                     Thank you for your order, <strong>{formData.name}</strong>. We have received it and will begin preparation shortly.
                 </p>
-                <Button onClick={() => navigate("/menu")} className="min-w-[200px]">
+                <Button onClick={resetAndNavigate} className="min-w-[200px]">
                     Order More Food
                 </Button>
             </div>

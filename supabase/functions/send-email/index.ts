@@ -34,19 +34,16 @@ serve(async (req) => {
         const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ""
         const supabase = createClient(supabaseUrl, supabaseKey)
 
-        // Fetch SMTP Configuration if not provided manually
-        let smtpConfig = manualConfig;
-        if (!smtpConfig) {
-            const { data: settingsData } = await supabase
-                .from('site_settings')
-                .select('value')
-                .eq('key', 'email')
-                .single();
+        // Fetch SMTP and Admin Settings
+        const { data: allSettings } = await supabase
+            .from('site_settings')
+            .select('*');
 
-            if (settingsData?.value) {
-                smtpConfig = settingsData.value;
-            }
-        }
+        const settingsMap: any = {};
+        allSettings?.forEach(s => settingsMap[s.key] = s.value);
+
+        let smtpConfig = manualConfig || settingsMap['email'];
+        const adminNotificationEmail = settingsMap['contact']?.admin_email || 'meshahan@gmail.com';
 
         const orderId = payload.id ? (typeof payload.id === 'string' ? payload.id.slice(0, 8) : payload.id) : 'NEW';
         const itemsList = items && Array.isArray(items)
@@ -109,12 +106,29 @@ serve(async (req) => {
                     </div>
                 </div>
             `;
+        } else if (template === 'admin_alert') {
+            subject = `NEW ${type?.toUpperCase()} - #${orderId}`;
+            htmlContent = `
+                <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
+                    <h1 style="color: #333; text-align: center;">New ${type?.toUpperCase()}!</h1>
+                    <p>You have received a new ${type} from <strong>${customerName}</strong>.</p>
+                    <div style="background: #f9f9f9; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                        <p><strong>ID:</strong> #${orderId}</p>
+                        <p><strong>Customer:</strong> ${customerName}</p>
+                        <p><strong>Email:</strong> ${customerEmail}</p>
+                        <p><strong>Items:</strong> ${itemsList}</p>
+                    </div>
+                    <p>Please log in to the Admin Dashboard to review more details.</p>
+                </div>
+            `;
         }
 
         // 1. Try Custom SMTP if configured
         if (smtpConfig?.smtpHost && smtpConfig?.smtpUser && smtpConfig?.smtpPass) {
             try {
-                console.log(`Attempting to send email via SMTP (${smtpConfig.smtpHost}) to ${customerEmail}...`)
+                const targetEmail = template === 'admin_alert' ? adminNotificationEmail : customerEmail;
+                console.log(`Attempting to send email via SMTP (${smtpConfig.smtpHost}) to ${targetEmail}...`)
+
                 const client = new SmtpClient();
                 await client.connectTLS({
                     hostname: smtpConfig.smtpHost,
@@ -125,58 +139,30 @@ serve(async (req) => {
 
                 await client.send({
                     from: `${smtpConfig.senderName || 'Pak Cuisine'} <${smtpConfig.smtpUser}>`,
-                    to: customerEmail,
+                    to: targetEmail,
                     subject: subject,
                     content: htmlContent,
                     html: htmlContent,
                 });
 
                 await client.close();
-                console.log(`Email sent successfully via SMTP to ${customerEmail}`);
+                console.log(`Email sent successfully via SMTP to ${targetEmail}`);
 
-                return new Response(JSON.stringify({ success: true, method: 'smtp' }), {
+                return new Response(JSON.stringify({ success: true, method: 'smtp', recipient: targetEmail }), {
                     headers: { ...corsHeaders, 'Content-Type': 'application/json' },
                     status: 200,
                 })
             } catch (smtpError) {
                 console.error("SMTP Error:", smtpError.message);
-                // If it's a test, return the error
-                if (type === 'test') {
-                    throw smtpError;
-                }
-                // Otherwise fallback (silent failure of SMTP, continue to fallback)
+                if (type === 'test') throw smtpError;
             }
         }
 
-        // 2. Fallback to Formspree for Admin Alerts OR if SMTP failed/missing
-        if (template === 'admin_alert') {
-            const submissionData = {
-                _replyto: customerEmail,
-                subject: `NEW ${type?.toUpperCase()} - #${orderId}`,
-                message: `New ${type} from ${customerName}. Please log in to Admin Dashboard to review and send confirmation.\n\nItems: ${itemsList}`,
-                customer: customerName,
-                email: customerEmail,
-                total: payload.total_amount ? `$${payload.total_amount}` : 'N/A',
-                type: type,
-                id: orderId
-            }
-
-            console.log(`Relaying admin alert to Formspree for ${customerEmail}...`)
-            const response = await fetch(FORMSPREE_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-                body: JSON.stringify(submissionData)
-            })
-
-            const result = await response.json()
-            if (!response.ok) throw new Error(result.error || "Failed to send to Formspree")
-            return new Response(JSON.stringify(result), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 })
-        }
-
-        // 3. Fallback to Resend if configured and SMTP failed/missing
+        // 2. Fallback to Resend
         const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
         if (RESEND_API_KEY) {
-            console.log(`Fallback: Sending email via Resend to ${customerEmail}...`)
+            const targetEmail = template === 'admin_alert' ? adminNotificationEmail : customerEmail;
+            console.log(`Fallback: Sending email via Resend to ${targetEmail}...`)
             const res = await fetch('https://api.resend.com/emails', {
                 method: 'POST',
                 headers: {
@@ -185,7 +171,7 @@ serve(async (req) => {
                 },
                 body: JSON.stringify({
                     from: 'Pak Cuisine <onboarding@resend.dev>',
-                    to: ['meshahan@gmail.com'], // Still restricted to meshahan@gmail.com for Resend free tier/unverified
+                    to: [targetEmail],
                     subject: `[FALLBACK] ${subject}`,
                     html: htmlContent,
                 }),

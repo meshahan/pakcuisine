@@ -1,15 +1,18 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Menu, X, Phone, Moon, Sun } from "lucide-react";
+import { Menu, X, Phone, Moon, Sun, User, LogOut, LayoutDashboard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useTheme } from "next-themes";
 import { CartSheet } from "@/components/cart/CartSheet";
 import { CartButton } from "@/components/cart/CartButton";
+import { supabase } from "@/integrations/supabase/client";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Tag, Utensils, Sparkles } from "lucide-react";
@@ -20,14 +23,13 @@ const navItems = [
   { name: "Menu", path: "/menu" },
   { name: "Reservations", path: "/reservations" },
   { name: "Gallery", path: "/gallery" },
-  { name: "About", path: "/about" },
   { name: "Blog", path: "/blog" },
-  { name: "Contact", path: "/contact" },
 ];
 
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [user, setUser] = useState<any>(null);
   const location = useLocation();
   const { theme, setTheme } = useTheme();
   const isHomePage = location.pathname === "/";
@@ -41,8 +43,24 @@ export function Navbar() {
   }, []);
 
   useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  useEffect(() => {
     setIsOpen(false);
   }, [location]);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+  };
 
   return (
     <header
@@ -119,6 +137,39 @@ export function Navbar() {
             <Button asChild className="bg-gradient-primary hover:opacity-90 shadow-glow">
               <Link to="/reservations">Book a Table</Link>
             </Button>
+
+            {user ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="icon" className="rounded-full border-primary/20 border-2 w-10 h-10 overflow-hidden">
+                    <User className="w-5 h-5 text-primary" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56 mt-2">
+                  <DropdownMenuLabel className="font-normal">
+                    <div className="flex flex-col space-y-1">
+                      <p className="text-sm font-bold leading-none">{user.user_metadata?.full_name || 'My Account'}</p>
+                      <p className="text-xs leading-none text-muted-foreground truncate">{user.email}</p>
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild className="cursor-pointer">
+                    <Link to="/dashboard" className="flex items-center">
+                      <LayoutDashboard className="mr-2 h-4 w-4" />
+                      <span>Dashboard</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleLogout} className="text-destructive cursor-pointer">
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Sign out</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <Button asChild variant="outline" className="border-primary/20 hover:bg-primary/10">
+                <Link to="/auth">Sign In</Link>
+              </Button>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -194,12 +245,28 @@ export function Navbar() {
                 <Phone className="w-4 h-4" />
                 <span>(123) 456-7890</span>
               </a>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 gap-2">
+                {user ? (
+                  <>
+                    <Button asChild variant="outline" className="w-full h-12 border-primary/20 gap-2">
+                      <Link to="/dashboard">
+                        <LayoutDashboard className="w-4 h-4" /> My Dashboard
+                      </Link>
+                    </Button>
+                    <Button onClick={handleLogout} variant="ghost" className="w-full h-12 text-destructive gap-2">
+                      <LogOut className="w-4 h-4" /> Sign Out
+                    </Button>
+                  </>
+                ) : (
+                  <Button asChild className="w-full h-12 bg-gradient-primary">
+                    <Link to="/auth">Sign In / Register</Link>
+                  </Button>
+                )}
                 <Button asChild variant="secondary" className="w-full h-12 shadow-sm border border-primary/20">
                   <Link to="/order-selection">Order Online</Link>
                 </Button>
-                <Button asChild className="w-full bg-gradient-primary">
-                  <Link to="/reservations">Book Table</Link>
+                <Button asChild className="w-full h-12 bg-gradient-primary">
+                  <Link to="/reservations">Book a Table</Link>
                 </Button>
               </div>
             </div>

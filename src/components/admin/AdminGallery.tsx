@@ -34,18 +34,23 @@ export function AdminGallery() {
 
     const fetchImages = async () => {
         setLoading(true);
+        console.log('AdminGallery: Fetching images...');
         const { data, error } = await supabase
             .from('gallery_images')
             .select('*')
             .order('display_order');
 
+        console.log('AdminGallery: Fetch result:', { data, error });
+
         if (error) {
+            console.error('AdminGallery: Error fetching images:', error);
             toast({
                 title: 'Error',
                 description: 'Failed to fetch gallery images',
                 variant: 'destructive',
             });
         } else {
+            console.log('AdminGallery: Setting images:', data);
             setImages(data || []);
         }
         setLoading(false);
@@ -170,16 +175,18 @@ export function AdminGallery() {
                             key={image.id}
                             className="group relative bg-card rounded-lg overflow-hidden shadow-sm border border-border hover:shadow-md transition-shadow"
                         >
-                            <img
-                                src={image.image_url}
-                                alt={image.caption || 'Gallery image'}
-                                className="w-full h-48 object-cover"
-                            />
-                            {!image.is_visible && (
-                                <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                                    <EyeOff className="w-8 h-8 text-white" />
-                                </div>
-                            )}
+                            <div className="relative h-48">
+                                <img
+                                    src={image.image_url}
+                                    alt={image.caption || 'Gallery image'}
+                                    className="w-full h-full object-cover"
+                                />
+                                {!image.is_visible && (
+                                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                                        <EyeOff className="w-8 h-8 text-white" />
+                                    </div>
+                                )}
+                            </div>
                             <div className="p-3">
                                 {image.caption && (
                                     <p className="text-sm text-muted-foreground mb-2 line-clamp-2">

@@ -17,10 +17,18 @@ import {
   Users,
   Image,
   Shield,
-  Tag
+  Tag,
+  Bell
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Session } from "@supabase/supabase-js";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { AdminDashboard } from "@/components/admin/AdminDashboard";
 import { AdminMenu } from "@/components/admin/AdminMenu";
 import { AdminReservations } from "@/components/admin/AdminReservations";
@@ -54,6 +62,7 @@ const Admin = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [notifications, setNotifications] = useState<any[]>([]);
 
   useEffect(() => {
     // Set up auth state listener
@@ -76,7 +85,58 @@ const Admin = () => {
       }
     });
 
-    return () => subscription.unsubscribe();
+    // Real-time notifications
+    const channel = supabase
+      .channel('admin-updates')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'reservations' },
+        (payload) => {
+          console.log('New Reservation!', payload);
+          const newNotif = {
+            id: Date.now(),
+            title: 'New Reservation',
+            message: `From ${payload.new.guest_name} for ${payload.new.party_size} people`,
+            type: 'reservation',
+            time: new Date().toLocaleTimeString()
+          };
+          setNotifications(prev => [newNotif, ...prev]);
+          toast({
+            title: "New Reservation!",
+            description: `${payload.new.guest_name} just booked a table.`,
+          });
+          // Play sound (optional)
+          const audio = new Audio('/notification.mp3');
+          audio.play().catch(() => { });
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'orders' },
+        (payload) => {
+          console.log('New Order!', payload);
+          const newNotif = {
+            id: Date.now(),
+            title: 'New Order',
+            message: `Order #${payload.new.id.slice(0, 8)} from ${payload.new.customer_name}`,
+            type: 'order',
+            time: new Date().toLocaleTimeString()
+          };
+          setNotifications(prev => [newNotif, ...prev]);
+          toast({
+            title: "New Order Received!",
+            description: `A new order has been placed by ${payload.new.customer_name}.`,
+          });
+          const audio = new Audio('/notification.mp3');
+          audio.play().catch(() => { });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      subscription.unsubscribe();
+      supabase.removeChannel(channel);
+    };
   }, [navigate]);
 
   const handleLogout = async () => {
@@ -96,6 +156,42 @@ const Admin = () => {
   if (!session) {
     return null;
   }
+
+  const userRole = session?.user?.user_metadata?.role || 'admin';
+  const isAdmin = userRole === 'admin';
+
+  if (!isAdmin) {
+    return (
+      <div className="min-h-screen bg-muted flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-card p-8 rounded-xl shadow-lg text-center space-y-4">
+          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto">
+            <Shield className="w-8 h-8 text-red-600" />
+          </div>
+          <h1 className="text-2xl font-bold text-foreground">Access Denied</h1>
+          <p className="text-muted-foreground">
+            You are logged in as <span className="font-semibold">{session.user.email}</span>,
+            but you do not have administrator permissions.
+          </p>
+          <div className="flex flex-col gap-2 pt-4">
+            <Button onClick={() => navigate("/dashboard")} className="w-full">
+              Go to Customer Dashboard
+            </Button>
+            <Button variant="outline" onClick={handleLogout} className="w-full text-destructive">
+              Sign Out
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+
+  const filteredNavItems = navItems.filter(item => {
+    if (item.path === "/admin/users" || item.path === "/admin/settings") {
+      return isAdmin;
+    }
+    return true;
+  });
 
   return (
     <>
@@ -136,7 +232,7 @@ const Admin = () => {
 
             {/* Navigation */}
             <nav className="flex-1 p-4 space-y-1">
-              {navItems.map((item) => (
+              {filteredNavItems.map((item) => (
                 <Link
                   key={item.path}
                   to={item.path}
@@ -164,7 +260,7 @@ const Admin = () => {
                   <p className="text-sm font-medium text-primary-foreground truncate">
                     {session.user.email}
                   </p>
-                  <p className="text-xs text-secondary-foreground/60">Administrator</p>
+                  <p className="text-xs text-secondary-foreground/60 capitalize">{userRole}</p>
                 </div>
               </div>
               <Button
@@ -183,15 +279,75 @@ const Admin = () => {
         {/* Main Content */}
         <div className="flex-1 flex flex-col min-w-0">
           {/* Top Bar */}
-          <header className="bg-card border-b border-border p-4 flex items-center gap-4 lg:hidden">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setSidebarOpen(true)}
-            >
-              <Menu className="w-6 h-6" />
-            </Button>
-            <span className="font-display font-semibold text-foreground">Admin Dashboard</span>
+          <header className="bg-card border-b border-border p-4 flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="lg:hidden"
+                onClick={() => setSidebarOpen(true)}
+              >
+                <Menu className="w-6 h-6" />
+              </Button>
+              <span className="font-display font-semibold text-foreground">
+                {navItems.find(item => item.path === location.pathname)?.label || "Admin Dashboard"}
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="ghost" size="icon" className="relative h-10 w-10 rounded-full border border-border">
+                    <Bell className="h-5 w-5" />
+                    {notifications.length > 0 && (
+                      <span className="absolute top-0 right-0 h-4 w-4 bg-primary text-[10px] font-bold text-white rounded-full flex items-center justify-center animate-pulse">
+                        {notifications.length}
+                      </span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-80 p-0 mr-4" align="end">
+                  <div className="p-4 border-b border-border flex items-center justify-between">
+                    <h4 className="font-bold text-sm">Notifications</h4>
+                    {notifications.length > 0 && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-auto p-0 text-xs text-primary hover:bg-transparent"
+                        onClick={() => setNotifications([])}
+                      >
+                        Clear All
+                      </Button>
+                    )}
+                  </div>
+                  <ScrollArea className="h-[300px]">
+                    {notifications.length === 0 ? (
+                      <div className="p-8 text-center text-muted-foreground text-sm">
+                        No new notifications
+                      </div>
+                    ) : (
+                      <div className="divide-y divide-border">
+                        {notifications.map(n => (
+                          <div key={n.id} className="p-4 hover:bg-muted/50 transition-colors cursor-pointer group">
+                            <div className="flex justify-between items-start mb-1">
+                              <Badge variant="outline" className={cn(
+                                "text-[10px] px-1.5 py-0 h-4",
+                                n.type === 'reservation' ? "bg-blue-500/10 text-blue-600 border-blue-200" : "bg-green-500/10 text-green-600 border-green-200"
+                              )}>
+                                {n.type}
+                              </Badge>
+                              <span className="text-[10px] text-muted-foreground">{n.time}</span>
+                            </div>
+                            <p className="text-sm font-bold text-foreground group-hover:text-primary transition-colors">{n.title}</p>
+                            <p className="text-xs text-muted-foreground line-clamp-2">{n.message}</p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </ScrollArea>
+                </PopoverContent>
+              </Popover>
+            </div>
           </header>
 
           {/* Content */}
@@ -205,9 +361,8 @@ const Admin = () => {
               <Route path="blog" element={<AdminBlog />} />
               <Route path="gallery" element={<AdminGallery />} />
               <Route path="testimonials" element={<AdminTestimonials />} />
-              <Route path="users" element={<AdminUsers />} />
-              <Route path="users" element={<AdminUsers />} />
-              <Route path="settings" element={<AdminSettings />} />
+              {isAdmin && <Route path="users" element={<AdminUsers />} />}
+              {isAdmin && <Route path="settings" element={<AdminSettings />} />}
               <Route path="deals" element={<AdminDeals />} />
             </Routes>
           </main>

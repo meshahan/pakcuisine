@@ -39,6 +39,7 @@ export function AdminUsers() {
         email: "",
         password: "",
         fullName: "",
+        role: "admin",
     });
 
     // Note: Standard Supabase client can't list all users (requires service role).
@@ -57,17 +58,18 @@ export function AdminUsers() {
             const { data, error } = await supabase.rpc('create_new_user', {
                 email: formData.email,
                 password: formData.password,
-                full_name: formData.fullName
+                full_name: formData.fullName,
+                role: formData.role
             });
 
             if (error) throw error;
 
             toast({
                 title: "User Created",
-                description: `Successfully created admin user: ${formData.email}`,
+                description: `Successfully created ${formData.role}: ${formData.email}`,
             });
             setIsDialogOpen(false);
-            setFormData({ email: "", password: "", fullName: "" });
+            setFormData({ email: "", password: "", fullName: "", role: "admin" });
 
         } catch (error: any) {
             toast({
@@ -92,12 +94,12 @@ export function AdminUsers() {
                     <DialogTrigger asChild>
                         <Button>
                             <Plus className="w-4 h-4 mr-2" />
-                            Add New Admin
+                            Add New User
                         </Button>
                     </DialogTrigger>
                     <DialogContent>
                         <DialogHeader>
-                            <DialogTitle>Add New Admin User</DialogTitle>
+                            <DialogTitle>Add New User</DialogTitle>
                         </DialogHeader>
                         <form onSubmit={handleCreateUser} className="space-y-4 mt-4">
                             <div className="space-y-2">
@@ -133,8 +135,20 @@ export function AdminUsers() {
                                     minLength={6}
                                 />
                             </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="role">Role</Label>
+                                <select
+                                    id="role"
+                                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                    value={formData.role}
+                                    onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                                >
+                                    <option value="admin">Admin (Full Access)</option>
+                                    <option value="sub-admin">Sub-Admin (Restricted Access)</option>
+                                </select>
+                            </div>
                             <Button type="submit" className="w-full" disabled={isCreating}>
-                                {isCreating ? "Creating..." : "Create Admin User"}
+                                {isCreating ? "Creating..." : "Create User"}
                             </Button>
                         </form>
                     </DialogContent>
@@ -147,8 +161,8 @@ export function AdminUsers() {
                 </div>
                 <h3 className="text-lg font-semibold mb-2">Secure User Management</h3>
                 <p className="text-muted-foreground max-w-md mx-auto">
-                    Use the "Add New Admin" button to create additional accounts that can access this dashboard.
-                    Listing all users requires additional database setup (profiles table).
+                    Use the "Add New User" button to create additional accounts with specific roles.
+                    Roles are stored in the user's metadata and can be used to restrict dashboard access.
                 </p>
             </div>
         </div>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Helmet } from "react-helmet-async";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
@@ -22,6 +22,31 @@ const Contact = () => {
     subject: "",
     message: "",
   });
+
+  // Auto-fill from profile if logged in
+  useEffect(() => {
+    const fetchProfile = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+
+      if (profile) {
+        setFormData(prev => ({
+          ...prev,
+          name: profile.full_name || prev.name,
+          email: profile.email || prev.email,
+          phone: profile.phone || prev.phone,
+        }));
+      }
+    };
+
+    fetchProfile();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

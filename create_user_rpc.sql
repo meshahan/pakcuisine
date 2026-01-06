@@ -8,7 +8,8 @@
 create or replace function public.create_new_user(
   email text,
   password text,
-  full_name text
+  full_name text,
+  role text default 'admin'
 )
 returns uuid
 language plpgsql
@@ -18,12 +19,6 @@ as $$
 declare
   new_user_id uuid;
 begin
-  -- check if the calling user is an admin (optional, for now we trust the app logic + RLS)
-  -- In a strict production env, you'd check:
-  -- if not exists (select 1 from public.user_roles where user_id = auth.uid() and role = 'admin') then
-  --   raise exception 'Access denied';
-  -- end if;
-
   -- Insert into auth.users directly
   insert into auth.users (
     instance_id,
@@ -48,7 +43,7 @@ begin
     crypt(password, gen_salt('bf')),
     now(), -- Auto-confirm email
     '{"provider":"email","providers":["email"]}',
-    jsonb_build_object('full_name', full_name),
+    jsonb_build_object('full_name', full_name, 'role', role),
     now(),
     now(),
     '',

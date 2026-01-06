@@ -17,6 +17,8 @@ import Checkout from "./pages/Checkout";
 import NotFound from "./pages/NotFound";
 import Deals from "./pages/Deals";
 import OrderSelection from "./pages/OrderSelection";
+import CustomerDashboard from "./pages/CustomerDashboard";
+import OrderTracking from "./pages/OrderTracking";
 
 import { AIChatbot } from "@/components/chatbot/AIChatbot";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -43,6 +45,8 @@ const App = () => (
                 <Route path="/reservations" element={<Reservations />} />
                 <Route path="/checkout" element={<Checkout />} />
                 <Route path="/auth" element={<Auth />} />
+                <Route path="/dashboard" element={<CustomerDashboard />} />
+                <Route path="/track/:id" element={<OrderTracking />} />
                 <Route path="/deals" element={<Deals />} />
                 <Route path="/order-selection" element={<OrderSelection />} />
                 <Route path="/admin/*" element={<Admin />} />
