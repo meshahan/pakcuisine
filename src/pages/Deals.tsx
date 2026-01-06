@@ -96,7 +96,7 @@ export default function Deals() {
         <div className="min-h-screen bg-background flex flex-col">
             <Navbar />
 
-            <main className="flex-1 pt-24 pb-16">
+            <main className="flex-1 pt-32 pb-16 safe-top">
                 {/* Hero Section */}
                 <section className="container px-4 text-center mb-16">
                     <motion.div
