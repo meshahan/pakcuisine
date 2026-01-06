@@ -77,7 +77,7 @@ export function Navbar() {
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2">
             <div className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center border border-primary/20 bg-white">
-              <img src="/images/logo.jpg" alt="Ibn Adam Logo" className="w-full h-full object-cover" />
+              <img src="images/logo.jpg" alt="Ibn Adam Logo" className="w-full h-full object-cover" />
             </div>
             <span className={cn(
               "font-display text-2xl font-bold transition-colors",
@@ -207,7 +207,7 @@ export function Navbar() {
               <div className="p-6 border-b border-border/40">
                 <Link to="/" onClick={() => setIsOpen(false)} className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full overflow-hidden border border-primary/20 shadow-glow">
-                    <img src="/images/logo.jpg" alt="Logo" className="w-full h-full object-cover" />
+                    <img src="images/logo.jpg" alt="Logo" className="w-full h-full object-cover" />
                   </div>
                   <div>
                     <h2 className="font-display text-xl font-bold bg-gradient-to-r from-primary to-spice bg-clip-text text-transparent">Pak Cuisine</h2>

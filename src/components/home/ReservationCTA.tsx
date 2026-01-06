@@ -37,12 +37,29 @@ export function ReservationCTA() {
       const { error } = await supabase.from("contact_submissions").insert({
         name: formData.name,
         email: formData.email,
-        phone: formData.phone || null,
         subject: formData.category, // Storing category in subject field
-        message: formData.message,
+        message: formData.phone ? `Phone: ${formData.phone}\n\n${formData.message}` : formData.message,
       });
 
       if (error) throw error;
+
+      // Send Email Notification to Admin
+      await supabase.functions.invoke('send-email', {
+        body: {
+          type: 'feedback',
+          template: 'admin_alert',
+          payload: {
+            id: 'MSG-' + Math.floor(Math.random() * 10000),
+            name: formData.name,
+            email: formData.email,
+          },
+          items: [
+            { quantity: 1, name: `Category: ${formData.category}` },
+            { quantity: 1, name: `Phone: ${formData.phone || 'N/A'}` },
+            { quantity: 1, name: `Message: ${formData.message}` }
+          ]
+        }
+      });
 
       setIsSuccess(true);
       toast({
@@ -78,8 +95,7 @@ export function ReservationCTA() {
             </p>
             <Button
               onClick={() => setIsSuccess(false)}
-              variant="outline"
-              className="border-primary/20 hover:bg-white/10 text-primary-foreground font-bold h-12 px-8 rounded-xl"
+              className="bg-background text-foreground hover:bg-background/90 border border-border shadow-sm font-bold h-12 px-8 rounded-xl"
             >
               Submit More Feedback
             </Button>
