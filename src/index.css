@@ -26,7 +26,8 @@
 
     /* Muted tones */
     --muted: 45 20% 92%;
-    --muted-foreground: 150 20% 40%; /* Slightly darker for better readability */
+    --muted-foreground: 150 20% 40%;
+    /* Slightly darker for better readability */
 
     /* Accent - Warm Red */
     --accent: 10 70% 50%;
@@ -70,7 +71,8 @@
     --secondary: 150 50% 35%;
     --secondary-foreground: 0 0% 100%;
     --muted: 220 15% 15%;
-    --muted-foreground: 45 10% 75%; /* Lighter for dark mode visibility */
+    --muted-foreground: 45 10% 75%;
+    /* Lighter for dark mode visibility */
     --accent: 10 65% 55%;
     --accent-foreground: 0 0% 100%;
     --destructive: 0 62.8% 50.6%;
@@ -98,55 +100,74 @@
   * {
     @apply border-border;
   }
-  
+
   body {
     @apply bg-background text-foreground;
     font-family: 'Poppins', sans-serif;
   }
 
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     font-family: 'Playfair Display', serif;
   }
 }
 
 @layer utilities {
+
+  /* Mobile Safe Areas */
+  .safe-top {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .min-h-safe {
+    min-height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  }
+
   .font-display {
     font-family: 'Playfair Display', serif;
   }
-  
+
   .font-body {
     font-family: 'Poppins', sans-serif;
   }
-  
+
   .text-gradient {
     @apply bg-clip-text text-transparent;
     background-image: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--spice)));
   }
-  
+
   .bg-gradient-hero {
     background-image: linear-gradient(180deg, hsla(150, 30%, 15%, 0.7) 0%, hsla(150, 30%, 15%, 0.4) 100%);
   }
-  
+
   .bg-gradient-primary {
     background-image: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--spice)) 100%);
   }
-  
+
   .shadow-glow {
     box-shadow: 0 0 30px hsla(35, 90%, 50%, 0.3);
   }
-  
+
   .animate-float {
     animation: float 6s ease-in-out infinite;
   }
-  
+
   .animate-fade-up {
     animation: fadeUp 0.6s ease-out forwards;
   }
-  
+
   .animate-fade-in {
     animation: fadeIn 0.5s ease-out forwards;
   }
-  
+
   .animate-scale-in {
     animation: scaleIn 0.4s ease-out forwards;
   }
@@ -157,9 +178,12 @@
 }
 
 @keyframes float {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: translateY(0);
   }
+
   50% {
     transform: translateY(-10px);
   }
@@ -170,6 +194,7 @@
     opacity: 0;
     transform: translateY(30px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -180,6 +205,7 @@
   from {
     opacity: 0;
   }
+
   to {
     opacity: 1;
   }
@@ -190,6 +216,7 @@
     opacity: 0;
     transform: scale(0.95);
   }
+
   to {
     opacity: 1;
     transform: scale(1);
@@ -201,6 +228,7 @@
     opacity: 0;
     transform: translateY(20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);

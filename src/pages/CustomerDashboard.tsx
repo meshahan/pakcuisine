@@ -86,7 +86,7 @@ const CustomerDashboard = () => {
             <div className="min-h-screen bg-background flex flex-col">
                 <Navbar />
 
-                <main className="flex-1 pt-24 pb-20">
+                <main className="flex-1 pt-32 pb-20 safe-top">
                     <div className="container mx-auto px-4 max-w-6xl">
                         {/* Header */}
                         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-4">

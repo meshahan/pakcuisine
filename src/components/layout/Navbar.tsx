@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { useTheme } from "next-themes";
 import { CartSheet } from "@/components/cart/CartSheet";
 import { CartButton } from "@/components/cart/CartButton";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { supabase } from "@/integrations/supabase/client";
 import {
   DropdownMenu,
@@ -196,82 +197,97 @@ export function Navbar() {
           </div>
         </nav>
 
-        {/* Mobile Navigation */}
-        <div
-          className={cn(
-            "lg:hidden overflow-hidden transition-all duration-300",
-            isOpen ? "max-h-screen opacity-100 mt-4" : "max-h-0 opacity-0"
-          )}
-        >
-          <div className="bg-card rounded-xl p-4 shadow-lg space-y-4">
-            <div className="flex items-center justify-between px-4 pb-2 border-b border-border">
-              <span className="text-sm font-medium text-muted-foreground">Appearance</span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                className="rounded-full gap-2"
-              >
-                {theme === "dark" ? (
-                  <Sun className="h-4 w-4" />
-                ) : (
-                  <Moon className="h-4 w-4" />
-                )}
-                <span className="text-xs uppercase font-bold tracking-wider">
-                  {theme === "dark" ? "Light" : "Dark"}
-                </span>
-              </Button>
-            </div>
-            <div className="md:hidden pt-2 pb-2 space-y-2">
-              {navItems.map((link) => (
-                <Link
-                  key={link.path}
-                  to={link.path}
-                  onClick={() => setIsOpen(false)}
-                  className={`block px-4 py-2 text-base font-medium transition-colors hover:bg-muted ${location.pathname === link.path
-                    ? "text-primary bg-muted/50"
-                    : "text-foreground/80"
-                    } ${link.special ? "text-orange-500 font-bold" : ""}`}
-                >
-                  {link.name}
+
+
+        {/* Mobile Navigation (Sheet) */}
+        <Sheet open={isOpen} onOpenChange={setIsOpen}>
+          <SheetContent side="left" className="w-[300px] sm:w-[350px] p-0 border-r border-border/40 bg-background/95 backdrop-blur-xl">
+            <div className="flex flex-col h-full safe-top safe-bottom">
+              {/* Sheet Header */}
+              <div className="p-6 border-b border-border/40">
+                <Link to="/" onClick={() => setIsOpen(false)} className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full overflow-hidden border border-primary/20 shadow-glow">
+                    <img src="/images/logo.jpg" alt="Logo" className="w-full h-full object-cover" />
+                  </div>
+                  <div>
+                    <h2 className="font-display text-xl font-bold bg-gradient-to-r from-primary to-spice bg-clip-text text-transparent">Pak Cuisine</h2>
+                    <p className="text-xs text-muted-foreground font-medium tracking-wider">PREMIUM TASTE</p>
+                  </div>
                 </Link>
-              ))}
-            </div>
-            <div className="pt-4 space-y-3 border-t border-border">
-              <a
-                href="tel:+1234567890"
-                className="flex items-center gap-2 py-3 px-4 text-foreground font-medium"
-              >
-                <Phone className="w-4 h-4" />
-                <span>(123) 456-7890</span>
-              </a>
-              <div className="grid grid-cols-1 gap-2">
+              </div>
+
+              {/* Navigation Links */}
+              <div className="flex-1 overflow-y-auto py-6 px-4 space-y-2">
+                {navItems.map((link) => (
+                  <Link
+                    key={link.path}
+                    to={link.path}
+                    onClick={() => setIsOpen(false)}
+                    className={cn(
+                      "flex items-center gap-3 px-4 py-3 rounded-xl text-base font-medium transition-all duration-200",
+                      location.pathname === link.path
+                        ? "bg-primary/10 text-primary translate-x-2"
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted/50",
+                      link.special && "bg-gradient-to-r from-orange-500/10 to-transparent text-orange-500 font-bold"
+                    )}
+                  >
+                    {link.path === "/deals" && <Sparkles className="w-4 h-4" />}
+                    {link.name}
+                  </Link>
+                ))}
+              </div>
+
+              {/* Footer / User Actions */}
+              <div className="p-6 mt-auto border-t border-border/40 space-y-4 bg-muted/20">
                 {user ? (
-                  <>
-                    <Button asChild variant="outline" className="w-full h-12 border-primary/20 gap-2">
-                      <Link to="/dashboard">
-                        <LayoutDashboard className="w-4 h-4" /> My Dashboard
-                      </Link>
-                    </Button>
-                    <Button onClick={handleLogout} variant="ghost" className="w-full h-12 text-destructive gap-2">
-                      <LogOut className="w-4 h-4" /> Sign Out
-                    </Button>
-                  </>
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-3 p-3 rounded-lg bg-background border border-border/50 shadow-sm">
+                      <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary">
+                        <User className="w-5 h-5" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold truncate">{user.user_metadata?.full_name || 'User'}</p>
+                        <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <Button asChild variant="outline" className="w-full justify-start gap-2 h-10">
+                        <Link to="/dashboard" onClick={() => setIsOpen(false)}>
+                          <LayoutDashboard className="w-4 h-4" /> Dashboard
+                        </Link>
+                      </Button>
+                      <Button onClick={() => { handleLogout(); setIsOpen(false); }} variant="destructive" className="w-full justify-start gap-2 h-10 bg-destructive/10 text-destructive hover:bg-destructive/20 border-transparent">
+                        <LogOut className="w-4 h-4" /> Sign Out
+                      </Button>
+                    </div>
+                  </div>
                 ) : (
-                  <Button asChild className="w-full h-12 bg-gradient-primary">
-                    <Link to="/auth">Sign In / Register</Link>
+                  <Button asChild className="w-full bg-gradient-primary shadow-glow h-12 rounded-xl text-base">
+                    <Link to="/auth" onClick={() => setIsOpen(false)}>Sign In / Register</Link>
                   </Button>
                 )}
-                <Button asChild variant="secondary" className="w-full h-12 shadow-sm border border-primary/20">
-                  <Link to="/order-selection">Order Online</Link>
-                </Button>
-                <Button asChild className="w-full h-12 bg-gradient-primary">
-                  <Link to="/reservations">Book a Table</Link>
-                </Button>
+
+                <div className="grid grid-cols-2 gap-2 pt-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                    className="w-full justify-center gap-2 h-9"
+                  >
+                    {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+                    <span className="text-xs font-bold">{theme === "dark" ? "Light Mode" : "Dark Mode"}</span>
+                  </Button>
+                  <a
+                    href="tel:+1234567890"
+                    className="flex items-center justify-center gap-2 text-xs font-bold text-muted-foreground hover:text-primary transition-colors h-9 border border-border/50 rounded-md"
+                  >
+                    <Phone className="w-3 h-3" /> Support
+                  </a>
+                </div>
               </div>
             </div>
-          </div>
-        </div>
+          </SheetContent>
+        </Sheet>
       </div>
       <CartSheet />
     </header>
